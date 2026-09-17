@@ -41,6 +41,20 @@ IP 查询、网络诊断、浏览器检测与 AI 服务状态工具箱。
 
 Workers Builds 会在 `main` 收到提交时构建和部署。上方按钮使用原项目地址；需要保留 Fork 关系和更新工作流时，请按教程导入你的 Fork。
 
+### 备选：部署到 Cloudflare Pages
+
+同一个仓库也能部署成 Pages 项目，`main` 分支直接可用。静态资源由 Pages 托管，`/api/*` 由 `functions/` 下的 Pages Functions 调用同一份 Worker 代码；Pages 不支持 Rate Limiting 绑定，`functions/api/_middleware.js` 按 isolate 计数补齐同样的限额。
+
+1. 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)，进入 **Workers & Pages**，选择 **Create → Pages → Connect to Git**。
+2. 连接 GitHub，选择你的 `one-ip` Fork，生产分支填 `main`。
+3. 框架预设可选 `React (Vite)`；构建命令填 `pnpm build`，构建输出目录填 `dist`。
+4. 建议在 **Settings → Environment variables** 固定工具链版本：`NODE_VERSION=24`、`PNPM_VERSION=10.32.1`。Pages 的 v3 构建镜像默认是 Node 22.16.0 和 pnpm 10.11.1，且不读 `package.json` 的 `engines`，也不从 `pnpm-lock.yaml` 识别 pnpm 版本。
+5. 保存并部署，完成后打开 `pages.dev` 地址。自定义域名在项目 **Custom domains** 中添加。
+
+`compatibility_date` 与 `nodejs_compat` 由仓库里的 `wrangler.toml` 提供，不需要在控制台重复设置。手动部署用 `pnpm deploy:pages`，需要先执行 `pnpm build`。
+
+两种部署共用同一份 `wrangler.toml`：Workers 读 `main`，Pages 读 `pages_build_output_dir`。因此 Static Assets 绑定命名为 `STATIC_ASSETS`——`ASSETS` 是 Pages 的保留名，声明它会被拒绝。
+
 ## 功能
 
 | 模块             | 支持的功能                                                                                                |
@@ -142,10 +156,13 @@ pnpm lint
 
 # 登录 Cloudflare 并部署
 pnpm exec wrangler login
-pnpm deploy
+pnpm deploy          # Workers
+pnpm deploy:pages    # Pages，需要先执行 pnpm build
 ```
 
 `pnpm deploy` 使用 `dist` 中的构建产物，运行前需要执行 `pnpm build`。`make deploy` 包含版本更新、构建和部署，无需密钥文件。
+
+调试 Pages Functions 用 `pnpm build && pnpm exec wrangler pages dev dist`，它同时提供构建后的界面和 `/api/*` 接口。`pnpm test` 会先编译 Workers 目标和 Pages Functions，因此同样依赖 `pnpm build` 生成的 `dist`。
 
 ## 验证体验（可选）
 
@@ -172,7 +189,7 @@ reCAPTCHA 使用 v3 评分型密钥。服务端校验 hostname、`browser_check`
 ## 项目结构与数据来源
 
 - `src/app.css`：界面样式；`src/components/ui`：shadcn/ui 组件。
-- `src/views`：网络、浏览器、AI 与状态页面；`public/worker`：Worker API。
+- `src/views`：网络、浏览器、AI 与状态页面；`public/worker`：API 实现；`functions/api/[[path]].js`：Pages Functions 入口。
 - Net.Coffee：IP 详情，展示字段取决于接口返回。
 - Globalping：全球测量；IANA / RDAP：注册资料；各平台官方状态源：运行状态。
 - FingerprintJS 与 CreepJS：浏览器检测，模块说明见 [vendor/browser-diagnostics](vendor/browser-diagnostics/README.md)。

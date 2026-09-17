@@ -11,7 +11,7 @@ import {
 
 const env = {
   APP_ENV: "prod",
-  ASSETS: { fetch: async () => new Response("SPA asset") },
+  STATIC_ASSETS: { fetch: async () => new Response("SPA asset") },
   API_LIMITER: { limit: async () => ({ success: true }) },
   ACTION_LIMITER: { limit: async () => ({ success: true }) },
 };

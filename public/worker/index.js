@@ -27,7 +27,8 @@ export default {
         url.protocol = "http:";
         return fetch(new Request(url, request));
       }
-      return env.ASSETS.fetch(request);
+      // "ASSETS" is reserved by Pages; see the shared binding name in wrangler.toml.
+      return env.STATIC_ASSETS.fetch(request);
     }
     try {
       const origin = request.headers.get("Origin");

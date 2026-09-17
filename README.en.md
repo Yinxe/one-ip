@@ -57,6 +57,20 @@ The project uses **Cloudflare Workers with Static Assets**. The `/api/*` routes 
 
 Workers Builds builds and deploys when `main` receives a commit. The button above points to the original repository. To preserve the fork relationship and update workflow, follow the steps to import your fork.
 
+### Alternative: deploy to Cloudflare Pages
+
+The same repository also deploys as a Pages project straight from `main`. Pages serves the static assets and `functions/` calls the same Worker code for `/api/*`. Pages does not support the Rate Limiting binding, so `functions/api/_middleware.js` enforces the same limits per isolate.
+
+1. Open the [Cloudflare dashboard](https://dash.cloudflare.com/), go to **Workers & Pages** and choose **Create → Pages → Connect to Git**.
+2. Connect GitHub, select your `one-ip` fork and set the production branch to `main`.
+3. Pick the `React (Vite)` framework preset, set the build command to `pnpm build` and the build output directory to `dist`.
+4. Add `NODE_VERSION=24` and `PNPM_VERSION=10.32.1` under **Settings → Environment variables**. The Pages v3 build image defaults to Node 22.16.0 and pnpm 10.11.1, and it neither reads `engines` from `package.json` nor detects the pnpm version from `pnpm-lock.yaml`.
+5. Deploy and open the assigned `pages.dev` address. Add a custom domain under the project's **Custom domains**.
+
+`compatibility_date` and `nodejs_compat` come from the repository's `wrangler.toml`, so there is nothing to configure in the dashboard. For a manual deployment use `pnpm deploy:pages` after `pnpm build`.
+
+Both targets share one `wrangler.toml`: Workers reads `main`, Pages reads `pages_build_output_dir`. The Static Assets binding is therefore named `STATIC_ASSETS`, because `ASSETS` is reserved by Pages and declaring it is rejected.
+
 ## Features
 
 | Module                   | Features                                                                                                                                                      |
@@ -136,10 +150,13 @@ pnpm lint
 
 # Log in to Cloudflare and deploy
 pnpm exec wrangler login
-pnpm deploy
+pnpm deploy          # Workers
+pnpm deploy:pages    # Pages, run pnpm build first
 ```
 
 `pnpm deploy` uses the build output in `dist`; run `pnpm build` before deployment. `make deploy` updates the version, builds and deploys without a secrets file.
+
+To debug Pages Functions, run `pnpm build && pnpm exec wrangler pages dev dist`, which serves the built interface and the `/api/*` routes together. `pnpm test` compiles the Workers target and the Pages Functions first, so it also needs the `dist` output from `pnpm build`.
 
 ## Verification (optional)
 
@@ -166,7 +183,7 @@ reCAPTCHA uses v3 score-based keys. The backend validates hostname, the `browser
 ## Structure and data sources
 
 - `src/app.css`: interface styles; `src/components/ui`: shadcn/ui components.
-- `src/views`: network, browser, AI and status pages; `public/worker`: Worker APIs.
+- `src/views`: network, browser, AI and status pages; `public/worker`: API implementations; `functions/api/[[path]].js`: Pages Functions entry point.
 - Net.Coffee: IP details. Available fields depend on the API response.
 - Globalping: global measurements; IANA / RDAP: registration records; official platform status feeds: service status.
 - FingerprintJS and CreepJS: browser checks. See [vendor/browser-diagnostics](vendor/browser-diagnostics/README.md) for module details.

@@ -16,6 +16,7 @@ dist-ssr
 .dev.vars.*
 worker-configuration.d.ts
 .worker-test
+.pages-test
 
 # Editor directories and files
 .vscode/*

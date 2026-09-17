@@ -1,11 +1,18 @@
 name = "one-ip"
 main = "public/worker/index.js"
+# Pages reads this key, Workers ignores it. Keeping both in one file lets the
+# same commit deploy as a Worker (`wrangler deploy`) and as a Pages project
+# (`wrangler pages deploy` or Pages Git integration).
+pages_build_output_dir = "./dist"
 compatibility_date = "2026-09-09"
 compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "./dist"
-binding = "ASSETS"
+# Pages reserves the binding name "ASSETS" for the project's own asset serving,
+# and rejects the configuration when a Pages project declares it. The Workers
+# Static Assets binding therefore uses a different name.
+binding = "STATIC_ASSETS"
 not_found_handling = "single-page-application"
 run_worker_first = ["/api/*", "/worker", "/worker/*"]
 
@@ -33,7 +40,7 @@ simple = { limit = 5, period = 60 }
 # Local development forwards all page and asset requests to Vite.
 [env.local.assets]
 directory = "./public"
-binding = "ASSETS"
+binding = "STATIC_ASSETS"
 not_found_handling = "single-page-application"
 run_worker_first = true
 
