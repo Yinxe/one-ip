@@ -3,6 +3,7 @@ import { SiteLogo } from "@/components/site-logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { t } from "@/i18n";
+import { attachMapLayers, loadMapConfig } from "@/lib/map";
 import type { Geo } from "@/lib/types";
 import { gsap } from "gsap";
 import L from "leaflet";
@@ -23,6 +24,7 @@ export default function ExitMap({
     geo?: Geo;
     visible: boolean;
     pending: boolean;
+    reachable?: boolean;
     geoPending: boolean;
   }[];
   onSelect: (name: string) => void;
@@ -47,21 +49,29 @@ export default function ExitMap({
   const [tileError, setTileError] = useState(false);
   useEffect(() => {
     if (!container.current) return;
+    let disposed = false;
+    let detachLayers = () => {};
     const instance = L.map(container.current, {
       scrollWheelZoom: false,
       minZoom: 1,
     }).setView([25, 20], 2);
     map.current = instance;
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    })
-      .on("tileerror", () => setTileError(true))
-      .addTo(instance);
+    setTileError(false);
+    void loadMapConfig().then((config) => {
+      if (disposed) return;
+      detachLayers = attachMapLayers(
+        L.tileLayer,
+        instance,
+        config,
+        () => {},
+        () => setTileError(true),
+      );
+    });
     const observer = new ResizeObserver(() => instance.invalidateSize());
     observer.observe(container.current);
     return () => {
+      disposed = true;
+      detachLayers();
       observer.disconnect();
       fitted.current = false;
       markers.current.clear();
@@ -278,18 +288,22 @@ export default function ExitMap({
                   ? t("等待检测")
                   : row.pending
                     ? t("检测中…")
-                    : !row.geo
-                      ? t("检测受阻")
-                      : row.geoPending
-                        ? t("查询中…")
-                        : t("已读取出口");
+                    : row.reachable === false
+                      ? t("访问受阻")
+                      : !row.geo
+                        ? t("出口不可读")
+                        : row.geoPending
+                          ? t("查询中…")
+                          : t("已读取出口");
                 const color = !row.visible
                   ? "bg-muted text-muted-foreground"
                   : row.pending || row.geoPending
                     ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                    : row.geo
-                      ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                      : "bg-destructive/10 text-destructive";
+                    : row.reachable === false
+                      ? "bg-destructive/10 text-destructive"
+                      : row.geo
+                        ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                        : "bg-amber-500/10 text-amber-700 dark:text-amber-300";
                 const hostname =
                   row.domain ?? row.icon.match(/\/ip3\/([^/?#]+)\.ico/)?.[1];
                 const website = row.domain

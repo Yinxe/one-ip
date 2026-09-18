@@ -15,6 +15,12 @@ export function PerfectScoreEffects() {
       const badge = card.querySelector(".ip-reputation-perfect");
       const crown = card.querySelector(".ip-perfect-label svg");
       const timeline = gsap.timeline({ defaults: { ease: "power2.out" } });
+      timeline.fromTo(
+        layer,
+        { opacity: 0 },
+        { opacity: 1, duration: 0.35, clearProps: "opacity" },
+        0,
+      );
       if (badge)
         timeline.from(
           badge,

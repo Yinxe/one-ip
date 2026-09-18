@@ -37,7 +37,6 @@ export async function ipHealth(request, env) {
   const string = (value) => (typeof value === "string" ? value : null);
   const result = {
     ip,
-    source: "Net.Coffee",
     checked_at: new Date().toISOString(),
     score,
     status:

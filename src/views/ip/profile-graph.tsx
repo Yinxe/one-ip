@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ToolCard } from "@/components/toolkit";
 import { Badge } from "@/components/ui/badge";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
@@ -23,6 +23,7 @@ import {
   type ComposeOption,
 } from "echarts/core";
 import { SVGRenderer } from "echarts/renderers";
+import { gsap } from "gsap";
 import { Info } from "lucide-react";
 import type { CoffeeIp } from "./coffee";
 import type { ipProfile } from "./profile";
@@ -72,7 +73,10 @@ export function IpReputationScale({
       > = {
         animation: !window.matchMedia("(prefers-reduced-motion: reduce)")
           .matches,
-        animationDuration: 200,
+        animationDuration: 650,
+        animationDurationUpdate: 260,
+        animationEasing: "cubicOut",
+        animationEasingUpdate: "cubicOut",
         grid: { left: 4, right: 4, top: 7, bottom: 22 },
         xAxis: { type: "value", min: 0, max: 100, show: false },
         yAxis: { type: "category", data: ["score"], show: false },
@@ -177,12 +181,35 @@ export default function IpProfileGraph({
   profile: ReturnType<typeof ipProfile>;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
+  const fieldsRef = useRef<HTMLDListElement>(null);
   const fields = ipProfileFields(data, profile);
   const active = selected === null ? null : fields[selected];
+  useLayoutEffect(() => {
+    const list = fieldsRef.current;
+    if (!list) return;
+    const media = gsap.matchMedia();
+    media.add("(prefers-reduced-motion: no-preference)", () => {
+      const items = list.querySelectorAll(":scope > div");
+      const tween = gsap.fromTo(
+        items,
+        { opacity: 0, y: 8 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.35,
+          stagger: 0.045,
+          ease: "power2.out",
+          clearProps: "opacity,transform",
+        },
+      );
+      return () => tween.kill();
+    });
+    return () => media.revert();
+  }, [data.ip]);
   return (
     <>
       <ToolCard title={t("IP 画像")}>
-        <dl className="ip-profile-fields">
+        <dl ref={fieldsRef} className="ip-profile-fields">
           {fields.map((field, index) => (
             <div key={field.label}>
               <dt>

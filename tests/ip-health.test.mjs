@@ -19,6 +19,7 @@ test("health API uses the caller IP, preserves false flags and returns uncached 
   const data = await response.json();
   assert.equal(data.score, 75);
   assert.equal(data.status, "good");
+  assert.equal(data.source, undefined);
   assert.equal(data.flags.vpn, false);
   assert.equal(data.flags.tor, null);
 });
@@ -66,6 +67,7 @@ test("health text handles IPv6 and strips terminal control characters", async (t
   assert.match(response.headers.get("Content-Type"), /text\/plain/);
   const body = await response.text();
   assert.match(body, /score: 90\nstatus: good/);
+  assert.ok(!body.includes("source: Net.Coffee"));
   assert.ok(!body.includes("\u001b"));
   assert.ok(!body.includes("\nInjected"));
 });

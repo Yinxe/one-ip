@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
 import { CountryFlag } from "@/components/country-flag";
 import { LatencyBadge } from "@/components/latency-badge";
 import { NumberTicker } from "@/components/number-ticker";
@@ -7,6 +6,7 @@ import { SiteLogo } from "@/components/site-logo";
 import { ActionButton, DataTable } from "@/components/toolkit";
 import { Card, CardContent } from "@/components/ui/card";
 import { t } from "@/i18n";
+import { SplitResults } from "@/views/home/split-results";
 import { skipToken, useQueries, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useAtom } from "jotai";
@@ -106,7 +106,15 @@ const columns: ColumnDef<ConnectivityRow>[] = [
   },
 ];
 
-function ConnectivityGroup({ cc, label }: { cc: string; label: string }) {
+function ConnectivityGroup({
+  cc,
+  label,
+  showLegend = false,
+}: {
+  cc: string;
+  label: string;
+  showLegend?: boolean;
+}) {
   const [rounds, setRounds] = useAtom(connectivityRoundAtom);
   const round = rounds[cc] ?? 0;
   const groupTargets = targets.filter((target) => target.cc === cc);
@@ -209,6 +217,18 @@ function ConnectivityGroup({ cc, label }: { cc: string; label: string }) {
             animateChanges={false}
             animateSorting
           />
+          {showLegend && (
+            <div className="legend connectivity-legend mt-3 border-t pt-3 text-xs">
+              <i className="dot-good" />
+              {t("优")}
+              <i className="dot-warn" />
+              {t("良")}
+              <i className="dot-slow" />
+              {t("慢")}
+              <i className="dot-fail" />
+              {t("连接失败")}
+            </div>
+          )}
         </CardContent>
       </Card>
     </section>
@@ -216,27 +236,23 @@ function ConnectivityGroup({ cc, label }: { cc: string; label: string }) {
 }
 
 export default function LinkPage() {
-  const [params] = useSearchParams();
-  const exits = params.get("view") === "exits";
   useEffect(() => {
-    document.title = t("网络连通 - IP 网络工具");
+    document.title = t("网站连通与出口 - IP 网络工具");
   }, []);
-  if (exits) return <Navigate replace to="/network/exits" />;
   return (
     <>
-      <h1 className="sr-only">{t("网络连通性测试")}</h1>
-      <div className="legend mb-2 text-xs">
-        <i className="dot-good" />
-        {t("优")}
-        <i className="dot-warn" />
-        {t("良")}
-        <i className="dot-slow" />
-        {t("慢")}
-        <i className="dot-fail" />
-        {t("连接失败")}
+      <h1 className="sr-only">{t("网站连通与分流出口")}</h1>
+      <SplitResults />
+      <div className="section-heading connectivity-page-heading">
+        <h2>{t("网站连通性")}</h2>
       </div>
-      {groups.map(([cc, label]) => (
-        <ConnectivityGroup key={cc} cc={cc} label={label} />
+      {groups.map(([cc, label], index) => (
+        <ConnectivityGroup
+          key={cc}
+          cc={cc}
+          label={label}
+          showLegend={index === groups.length - 1}
+        />
       ))}
       <p className="principle">
         {t(

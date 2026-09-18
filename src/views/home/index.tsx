@@ -4,7 +4,12 @@ import { ConnectivityTile, homeTargets } from "@/components/connectivity";
 import { CountryFlag } from "@/components/country-flag";
 import { NumberTicker } from "@/components/number-ticker";
 import { SiteLogo } from "@/components/site-logo";
-import { ActionButton, IpText, Pending } from "@/components/toolkit";
+import {
+  ActionButton,
+  IpText,
+  Pending,
+  PrivacyToggle,
+} from "@/components/toolkit";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { UnderlineHover } from "@/components/underline-hover";
@@ -17,6 +22,7 @@ import { companyTypeColors } from "@/lib/ip-badge-colors";
 import { ipScoreColor } from "@/lib/ip-score";
 import { BrowserSummary } from "@/views/browser/summary";
 import { lookupIp } from "@/views/ip/api";
+import { PerfectScoreEffects } from "@/views/ip/perfect-score-effects";
 import { testConnectivity, type ProbeResult } from "@/views/link/api";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import {
@@ -168,7 +174,10 @@ export function HomePage() {
   return (
     <div className="home-page">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h1 className="text-sm font-semibold">{t("网络概览")}</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-sm font-semibold">{t("网络概览")}</h1>
+          <PrivacyToggle iconOnly />
+        </div>
         <ActionButton
           size="sm"
           variant="outline"
@@ -245,6 +254,7 @@ export function HomePage() {
               key={index}
               className={`home-primary-card relative${score === 100 ? " ip-dossier-perfect" : ""}`}
             >
+              {score === 100 && <PerfectScoreEffects />}
               {data && (
                 <Link
                   to={`/network/ip/${encodeURIComponent(data.ip)}`}
@@ -389,9 +399,9 @@ export function HomePage() {
                 icon: () => <SiteLogo website="https://chatgpt.com" />,
               },
               {
-                path: "/network/exits",
-                label: t("分流出口"),
-                description: t("核对不同网站的实际出口"),
+                path: "/network/connectivity",
+                label: t("网站连通与出口"),
+                description: t("核对网站连通性、响应延迟和实际出口"),
                 icon: Network,
               },
               {

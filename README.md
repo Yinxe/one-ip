@@ -23,8 +23,6 @@ IP 查询、网络诊断、浏览器检测与 AI 服务状态工具箱。
 
 [在线体验](https://ip.huzhihui.com/) · [GitHub](https://github.com/zhihui-hu/one-ip)
 
-社区友链：[LINUX DO](https://linux.do/) · 真诚、友善、团结、专业。
-
 点击下方按钮，一键部署到 Cloudflare。
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fzhihui-hu%2Fone-ip)
@@ -38,6 +36,8 @@ IP 查询、网络诊断、浏览器检测与 AI 服务状态工具箱。
 5. 点击部署，完成后打开 `workers.dev` 地址。自定义域名在 Worker 设置中绑定。
 
 项目使用 **Cloudflare Workers + Static Assets**，`/api/*` 接口需要 Worker。基础功能无需应用环境变量或 API Key。Turnstile 和 reCAPTCHA 的配置见“验证体验”。
+
+国内网络访问地图时，建议在 Worker → Settings → Variables and Secrets 配置 `TIANDITU_TOKEN`（也可以用 `pnpm exec wrangler secret put TIANDITU_TOKEN`）。配置后地图优先使用天地图，失败时回退到 OpenStreetMap；未配置时保持 OpenStreetMap。
 
 Workers Builds 会在 `main` 收到提交时构建和部署。上方按钮使用原项目地址；需要保留 Fork 关系和更新工作流时，请按教程导入你的 Fork。
 
@@ -107,7 +107,7 @@ curl -fsS 'https://ip.huzhihui.com/api/ip/health?ip=2606:4700:4700::1111&format=
 
 自部署时替换域名。本地开发使用 `http://127.0.0.1:8787`，必须指定 `ip`。省略 `ip` 时使用 Cloudflare 识别的本次请求出口；经过代理时会查询代理出口。
 
-返回 `ip`、`source`、`checked_at`、`score`、`status`、位置、ISP、ASN 和 `flags`（住宅、数据中心、移动网络、VPN、代理、Tor、爬虫、滥用标记）。信誉分范围 0–100，越高越好；与网页相同，75–100 为 `good`、45–74 为 `moderate`、低于 45 为 `poor`。缺失或无效分数返回 `score: null`、`status: "unknown"`；缺失标记返回 `null`，不视为 `false`。
+返回 `ip`、`checked_at`、`score`、`status`、位置、ISP、ASN 和 `flags`（住宅、数据中心、移动网络、VPN、代理、Tor、爬虫、滥用标记）。信誉分范围 0–100，越高越好；与网页相同，75–100 为 `good`、45–74 为 `moderate`、低于 45 为 `poor`。缺失或无效分数返回 `score: null`、`status: "unknown"`；缺失标记返回 `null`，不视为 `false`。
 
 `format` 支持 `json`（默认）和 `text`。错误始终返回 JSON `{ "error": "…" }`：无效参数为 400、限流为 429、无法识别访客 IP 为 503、数据源故障或地址不匹配为 502。接口沿用现有请求限流，响应不缓存。健康度仅表示第三方 IP 信誉，不包含终端网络测速、浏览器检测或 AI 账号可用性判断。
 
@@ -219,3 +219,5 @@ reCAPTCHA 使用 v3 评分型密钥。服务端校验 hostname、`browser_check`
 Claude 页面自动比较 `claude.ai` 与 `claude.com` 出口，并展示 DNS、WebRTC 和语言、时区等浏览器信息。检测失败、不同出口或中文偏好均不直接代表账号风险。未接入 Cloudflare 企业版 Bot Management；不展示推算的企业版分数。
 
 Claude 页面还内嵌自动人机校验，并本地检测简繁中文字体、厂商字体、UA / Client Hints、Intl 区域及 Canvas 国旗渲染。检测字典参考 LinXiaoTao/FuckClaude，来源摘要与 MIT 许可证位于 `vendor/claude-environment/`。不使用其风险分数；不把字体、厂商或中文偏好解释为国籍或封禁概率。页面仅展示简洁人机状态和逐项更新的检测日志，不提供评分卡或文本输入。
+
+社区友链：[LINUX DO](https://linux.do/) · 真诚、友善、团结、专业。

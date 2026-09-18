@@ -75,7 +75,7 @@ export default function PolicyPage({ page }: { page: "terms" | "privacy" }) {
       [
         t("第三方服务明细"),
         t(
-          "IP 归属查询可能请求 ipwho.is、IP.SB 或 ipify；IP 健康度使用 Net.Coffee。全球 Ping 向 Globalping 提交目标和探针选择；地图加载 OpenStreetMap；服务状态读取各厂商公开接口。具体请求取决于你打开的页面和选择的检测。",
+          "IP 归属查询可能请求 ipwho.is、IP.SB 或 ipify；IP 健康度使用 Net.Coffee。全球 Ping 向 Globalping 提交目标和探针选择；地图优先加载天地图，未配置或不可用时回退到 OpenStreetMap；服务状态读取各厂商公开接口。具体请求取决于你打开的页面和选择的检测。",
         ),
       ],
       [

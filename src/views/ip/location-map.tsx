@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ToolCard, Pending } from "@/components/toolkit";
 import { Button } from "@/components/ui/button";
 import { t } from "@/i18n";
+import { attachMapLayers, loadMapConfig, mapExternalUrl } from "@/lib/map";
 import type { Geo } from "@/lib/types";
 import type { Map as LeafletMap } from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -44,6 +45,7 @@ export function LocationMap({ geo }: { geo: Geo }) {
     let disposed = false;
     let observer: ResizeObserver | undefined;
     let instance: LeafletMap | undefined;
+    let detachLayers = () => {};
     setLoaded(false);
     setTileError(false);
     void import("leaflet")
@@ -64,20 +66,28 @@ export function LocationMap({ geo }: { geo: Geo }) {
             zoomOutTitle: t("缩小地图"),
           })
           .addTo(instance);
-        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        })
-          .on("tileload", () => {
-            if (!disposed) setLoaded(true);
-          })
-          .on("tileerror", () => {
-            if (!disposed) setTileError(true);
-          })
-          .addTo(instance);
+        const mapInstance = instance;
+        void loadMapConfig().then((config) => {
+          if (disposed) return;
+          detachLayers = attachMapLayers(
+            L.tileLayer,
+            mapInstance,
+            config,
+            () => setLoaded(true),
+            () => setTileError(true),
+          );
+        });
         const label = document.createElement("span");
         label.textContent = location;
+        L.circleMarker([latitude, longitude], {
+          radius: 10,
+          className: "ip-location-ping",
+          color: "#1976d2",
+          weight: 2,
+          fill: false,
+          fillOpacity: 0,
+          interactive: false,
+        }).addTo(instance);
         L.circleMarker([latitude, longitude], {
           radius: 7,
           color: "#fff",
@@ -95,6 +105,7 @@ export function LocationMap({ geo }: { geo: Geo }) {
       });
     return () => {
       disposed = true;
+      detachLayers();
       observer?.disconnect();
       instance?.remove();
       map.current = null;
@@ -123,7 +134,7 @@ export function LocationMap({ geo }: { geo: Geo }) {
               </Button>
               <Button variant="ghost" size="icon-sm" asChild>
                 <a
-                  href={`https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=7/${latitude}/${longitude}`}
+                  href={mapExternalUrl(latitude, longitude, location)}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={t("查看大图")}

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ipNetwork } from "../public/worker/ip-network.js";
+import { registrationServer } from "../public/worker/whois.js";
 
 test("network details validate all announcing ASNs and preserve no-ROA vs unavailable", async () => {
   const original = globalThis.fetch;
@@ -10,10 +11,37 @@ test("network details validate all announcing ASNs and preserve no-ROA vs unavai
       ? { prefix: "1.1.1.0/24", asns: ["13335", "123"] }
       : u.pathname.includes("reverse-dns")
         ? { result: ["one.one.one.one"] }
-        : {
-            status:
-              u.searchParams.get("resource") === "13335" ? "valid" : "unknown",
-          };
+        : u.pathname.includes("bgp-state")
+          ? {
+              query_time: "2026-09-16T00:00:00Z",
+              nr_routes: 4,
+              bgp_state: [
+                {
+                  target_prefix: "1.1.1.0/24",
+                  path: ["6453", "3356", "13335"],
+                },
+                {
+                  target_prefix: "1.1.1.0/24",
+                  path: ["6453", "3356", "13335"],
+                },
+                {
+                  target_prefix: "1.1.1.0/24",
+                  path: ["1299", "3356", "13335"],
+                },
+                {
+                  target_prefix: "1.1.1.0/24",
+                  path: ["174", "13335"],
+                },
+              ],
+            }
+          : u.pathname.includes("as-overview")
+            ? { holder: `Holder ${u.searchParams.get("resource")}` }
+            : {
+                status:
+                  u.searchParams.get("resource") === "13335"
+                    ? "valid"
+                    : "unknown",
+              };
     return Response.json({ status: "ok", data });
   };
   try {
@@ -23,6 +51,17 @@ test("network details validate all announcing ASNs and preserve no-ROA vs unavai
       result.validations.map((v) => v.status),
       ["valid", "unknown"],
     );
+    assert.equal(result.topology.observedPaths, 4);
+    assert.deepEqual(
+      result.topology.direct.map((item) => [item.asn, item.count]),
+      [
+        ["3356", 3],
+        ["174", 1],
+      ],
+    );
+    assert.equal(result.topology.secondary[0].asn, "6453");
+    assert.deepEqual(result.topology.secondary[0].via, ["3356"]);
+    assert.equal(result.topology.origins[0].name, "Holder AS13335");
   } finally {
     globalThis.fetch = original;
   }
@@ -42,14 +81,19 @@ test("RIPE failure returns unavailable without inventing route data", async () =
   }
 });
 
-import { registrationServer } from '../public/worker/whois.js';
-test('RDAP bootstrap chooses the longest matching IPv4 or IPv6 registration prefix', () => {
+test("RDAP bootstrap chooses the longest matching IPv4 or IPv6 registration prefix", () => {
   const services = [
-    [['124.0.0.0/8'], ['https://rdap.apnic.net/']],
-    [['124.127.0.0/16'], ['https://specific.example/']],
-    [['2001:db8::/32'], ['https://v6.example/']],
+    [["124.0.0.0/8"], ["https://rdap.apnic.net/"]],
+    [["124.127.0.0/16"], ["https://specific.example/"]],
+    [["2001:db8::/32"], ["https://v6.example/"]],
   ];
-  assert.equal(registrationServer('124.127.77.179', services), 'https://specific.example/');
-  assert.equal(registrationServer('2001:db8::1', services), 'https://v6.example/');
-  assert.equal(registrationServer('8.8.8.8', services), undefined);
+  assert.equal(
+    registrationServer("124.127.77.179", services),
+    "https://specific.example/",
+  );
+  assert.equal(
+    registrationServer("2001:db8::1", services),
+    "https://v6.example/",
+  );
+  assert.equal(registrationServer("8.8.8.8", services), undefined);
 });

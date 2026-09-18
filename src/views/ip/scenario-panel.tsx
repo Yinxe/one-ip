@@ -1,7 +1,7 @@
 import { Fragment, memo, useState } from "react";
 import { LatencyBadge } from "@/components/latency-badge";
 import { SiteLogo } from "@/components/site-logo";
-import { ToolCard } from "@/components/toolkit";
+import { Pending, ToolCard } from "@/components/toolkit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
@@ -84,7 +84,13 @@ const metricLabels: Record<string, string> = {
   uploadSamples: t("上传样本不足"),
   aimScore: t("AIM 评分未产生"),
 };
-export function ScenarioStars({ stars }: { stars: number }) {
+export function ScenarioStars({
+  stars,
+  showValue = true,
+}: {
+  stars: number;
+  showValue?: boolean;
+}) {
   return (
     <span
       className="ip-scenario-stars"
@@ -104,7 +110,7 @@ export function ScenarioStars({ stars }: { stars: number }) {
           </span>
         </span>
       ))}
-      <span>{stars}/5</span>
+      {showValue && <span>{stars}/5</span>}
     </span>
   );
 }
@@ -327,7 +333,7 @@ function AccessRows({
                       />
                     ) : (
                       <Badge variant={running ? "secondary" : "warning"}>
-                        {status}
+                        {running ? <Pending>{status}</Pending> : status}
                       </Badge>
                     )}
                   </TableCell>
@@ -439,7 +445,7 @@ const ScenarioSummaryRow = memo(function ScenarioSummaryRow({
               />
             ))}
           </div>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="ip-scenario-count text-[10px] text-muted-foreground">
             {rated}/{group.targets.length}
           </span>
           <span
@@ -459,7 +465,7 @@ const ScenarioSummaryRow = memo(function ScenarioSummaryRow({
             <ScenarioStars stars={average} />
           ) : (
             <Badge variant="secondary">
-              {busy ? t("检测中…") : t("证据不足")}
+              {busy ? <Pending>{t("检测中…")}</Pending> : t("证据不足")}
             </Badge>
           )}
         </div>
@@ -512,7 +518,13 @@ export function ScenarioPanel({
             {t("取消")}
           </Button>
         )}
-        <Badge variant={stateTone(state)}>{stateLabels[state]}</Badge>
+        <Badge variant={stateTone(state)}>
+          {state === "running" ? (
+            <Pending>{stateLabels[state]}</Pending>
+          ) : (
+            stateLabels[state]
+          )}
+        </Badge>
       </div>
       {state === "mismatch" && (
         <p>{t("观察到的出口与查询 IP 不一致，此结果不能给该 IP 评分。")}</p>
@@ -555,7 +567,7 @@ export function ScenarioPanel({
           disabled={Boolean(busy)}
           onClick={access.busy ? access.cancel : access.start}
         >
-          {access.busy ? t("停止检测") : t("重新测试")}
+          {access.busy ? <Pending>{t("停止检测")}</Pending> : t("重新测试")}
         </Button>
       </div>
       <div className="data-table connectivity-table ip-scenario-table">
@@ -621,7 +633,11 @@ export function ScenarioPanel({
               </p>
               {average.rated < average.total && (
                 <Badge variant="warning">
-                  {access.busy ? t("检测中…") : t("部分结果")}
+                  {access.busy ? (
+                    <Pending>{t("检测中…")}</Pending>
+                  ) : (
+                    t("部分结果")
+                  )}
                 </Badge>
               )}
             </div>

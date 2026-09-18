@@ -28,6 +28,7 @@ import {
 } from "@tanstack/react-table";
 import { gsap } from "gsap";
 import { useAtom, useAtomValue } from "jotai";
+import { Eye, EyeOff } from "lucide-react";
 
 export function PageHeading({
   title,
@@ -51,8 +52,24 @@ export function PageHeading({
     </>
   );
 }
-export function PrivacyToggle() {
+export function PrivacyToggle({ iconOnly = false }: { iconOnly?: boolean }) {
   const [hidden, setHidden] = useAtom(hideIpAtom);
+  if (iconOnly) {
+    const label = hidden ? t("显示 IP 地址") : t("隐藏 IP 地址");
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label={label}
+        title={label}
+        aria-pressed={hidden}
+        onClick={() => setHidden((value) => !value)}
+      >
+        {hidden ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+      </Button>
+    );
+  }
   return (
     <label className="privacy-toggle">
       <span>{t("隐藏IP")}</span>
@@ -68,18 +85,17 @@ export function IpText({ ip, link = true }: { ip?: string; link?: boolean }) {
   const hidden = useAtomValue(hideIpAtom);
   if (!ip) return <span className="muted">{t("未知")}</span>;
   const text = maskedIp(ip, hidden);
-  return link && !hidden ? (
-    <UnderlineHover asChild>
-      <Link className="ip-text" to={`/network/ip/${encodeURIComponent(ip)}`}>
-        <AnimatedValue value={text}>
-          <CompactText text={text} middle tooltip={false} />
-        </AnimatedValue>
-      </Link>
-    </UnderlineHover>
-  ) : (
+  const content = <CompactText text={text} middle tooltip={false} />;
+  return (
     <span className="ip-text">
-      <AnimatedValue value={text}>
-        <CompactText text={text} middle tooltip={false} />
+      <AnimatedValue value={ip}>
+        {link && !hidden ? (
+          <UnderlineHover asChild>
+            <Link to={`/network/ip/${encodeURIComponent(ip)}`}>{content}</Link>
+          </UnderlineHover>
+        ) : (
+          content
+        )}
       </AnimatedValue>
     </span>
   );

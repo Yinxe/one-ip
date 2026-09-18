@@ -21,6 +21,7 @@ import { ipProfile } from "./profile";
 import { useIpLatency } from "./use-ip-latency";
 
 const IpProfileGraph = lazy(() => import("./profile-graph"));
+const IpRouteGraph = lazy(() => import("./route-graph"));
 const IpReputationScale = lazy(() =>
   import("./profile-graph").then((module) => ({
     default: module.IpReputationScale,
@@ -442,6 +443,21 @@ export function IpDetails({
           )}
         </ToolCard>
       )}
+      <Suspense
+        fallback={
+          <ToolCard title={t("BGP 路由拓扑")}>
+            <div className="ip-route-graph-state">
+              <Pending>{t("正在读取路由数据…")}</Pending>
+            </div>
+          </ToolCard>
+        }
+      >
+        <IpRouteGraph
+          ip={d.ip}
+          currentAsn={d.asn}
+          currentAsnName={d.asOrganization ?? d.asname}
+        />
+      </Suspense>
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant="outline" asChild>
           <Link to={`/network/ping/?host=${encodeURIComponent(d.ip)}`}>

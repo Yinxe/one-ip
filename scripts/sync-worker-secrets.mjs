@@ -7,7 +7,7 @@ if (environment !== "production")
   throw new Error("Only production is supported");
 const filename = `.secrets.${environment}.env`;
 if (!existsSync(filename)) {
-  console.log("No optional challenge configuration; nothing to synchronize.");
+  console.log("No optional configuration; nothing to synchronize.");
   process.exit(0);
 }
 const ignored = spawnSync("git", ["check-ignore", "-q", filename]);
@@ -23,6 +23,7 @@ const allowed = [
   "RECAPTCHA_SITE_KEY",
   "RECAPTCHA_SECRET",
   "RECAPTCHA_HOSTNAMES",
+  "TIANDITU_TOKEN",
 ];
 if (Object.keys(values).some((key) => !allowed.includes(key)))
   throw new Error("Secret file contains unsupported configuration keys");

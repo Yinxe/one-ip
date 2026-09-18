@@ -8,6 +8,7 @@ import {
   upstream,
   HttpError,
 } from "../public/worker/http.js";
+import { mapConfig } from "../public/worker/map.js";
 
 const env = {
   APP_ENV: "prod",
@@ -104,6 +105,21 @@ test("unknown APIs return JSON 404 instead of the SPA", async () => {
   const response = await worker.fetch(request("/api/not-found"), env);
   assert.equal(response.status, 404);
   assert.match(response.headers.get("Content-Type"), /application\/json/);
+});
+test("map config exposes only the selected public tile provider", async () => {
+  assert.deepEqual(mapConfig({}), { provider: "osm" });
+  assert.deepEqual(mapConfig({ TIANDITU_TOKEN: "  test-token  " }), {
+    provider: "tianditu",
+    token: "test-token",
+  });
+  const response = await worker.fetch(request("/api/map/config"), {
+    ...env,
+    TIANDITU_TOKEN: "test-token",
+  });
+  assert.deepEqual(await response.json(), {
+    provider: "tianditu",
+    token: "test-token",
+  });
 });
 test("API method and origin checks", async () => {
   assert.equal(

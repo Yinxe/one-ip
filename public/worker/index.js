@@ -7,6 +7,7 @@ import { siteIcon } from "./icons.js";
 import { ipHealth } from "./ip-health.js";
 import { ipNetwork } from "./ip-network.js";
 import { ipType } from "./ip-type.js";
+import { mapConfig } from "./map.js";
 import { startPing, pingResult, pingNodes } from "./ping.js";
 import { normalizeStatus } from "./service-status.js";
 import services from "./services.json";
@@ -60,6 +61,7 @@ export default {
         return json(
           await verifyChallenge(await inputJson(request), env, url.hostname),
         );
+      if (path === "/map/config") return json(mapConfig(env));
       if (path === "/me") {
         const data = cfGeo(request);
         if (!data.ip || key === "local" || env.LOCAL_DEV === "true")

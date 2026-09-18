@@ -1,5 +1,5 @@
 import { t } from "@/i18n";
-import { endpoint, request, trace } from "@/lib/network";
+import { endpoint, probe, request, trace } from "@/lib/network";
 import type { Geo } from "@/lib/types";
 
 export const getMyIp = (signal?: AbortSignal) =>
@@ -100,6 +100,38 @@ export interface Site {
   url?: string;
   icon: string;
 }
+const fallbackSiteProbeUrl =
+  "https://necaptcha.nosdn.127.net/ab7f4275c1744aa28e0a8f3a1c58c532.png";
+
+export function siteProbeUrl(site: Pick<Site, "domain" | "url">) {
+  return site.domain
+    ? `https://${site.domain}/`
+    : (site.url ?? fallbackSiteProbeUrl);
+}
+
+export async function probeSite(site: Site, signal?: AbortSignal) {
+  return (await probe(siteProbeUrl(site), signal)) >= 0;
+}
+
+export interface SiteInspection {
+  geo?: Geo;
+  reachable: boolean;
+}
+
+export async function inspectSite(
+  site: Site,
+  signal?: AbortSignal,
+): Promise<SiteInspection> {
+  if (site.method === "unsupported")
+    return { reachable: await probeSite(site, signal) };
+  try {
+    return { geo: await detectSite(site, signal), reachable: true };
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    return { reachable: await probeSite(site, signal) };
+  }
+}
+
 export async function detectSite(
   site: Site,
   signal?: AbortSignal,
@@ -139,11 +171,8 @@ export async function detectSite(
       throw new Error(t("未获取到可读取的出口 IP"));
     geo = { ip, source: site.name };
   } else {
-    const url =
-      site.url ??
-      "https://necaptcha.nosdn.127.net/ab7f4275c1744aa28e0a8f3a1c58c532.png";
     const headers = await request<Headers>(
-      url,
+      site.url ?? fallbackSiteProbeUrl,
       { method: "HEAD", cache: "no-store", signal },
       "headers",
     );
